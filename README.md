@@ -5,106 +5,48 @@
 
 **Matrícula:** 2017068777
 
-**Projeto:**   Link: https://github.com/ytdl-org/youtube-dl
+**Projeto:**   Link: https://github.com/joke2k/faker
 
-Youtube-DL - download videos from youtube.com or other video platforms
+Faker é um pacote Python que gera dados falsos para você. Se você precisa inicializar seu banco de dados, criar documentos XML bonitos, preencher sua persistência para fazer um teste de resistência ou anonimizar dados obtidos de um serviço de produção, o Faker é para você.
 
 
 **Teste 1**
 ```python
-class TestCache(unittest.TestCase):
-    def setUp(self):
-        TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-        TESTDATA_DIR = os.path.join(TEST_DIR, 'testdata')
-        _mkdir(TESTDATA_DIR)
-        self.test_dir = os.path.join(TESTDATA_DIR, 'cache_test')
-        self.tearDown()
-
-    def tearDown(self):
-        if os.path.exists(self.test_dir):
-            shutil.rmtree(self.test_dir)
-
-    def test_cache(self):
-        ydl = FakeYDL({
-            'cachedir': self.test_dir,
-        })
-        c = Cache(ydl)
-        obj = {'x': 1, 'y': ['ä', '\\a', True]}
-        self.assertEqual(c.load('test_cache', 'k.'), None)
-        c.store('test_cache', 'k.', obj)
-        self.assertEqual(c.load('test_cache', 'k2'), None)
-        self.assertFalse(_is_empty(self.test_dir))
-        self.assertEqual(c.load('test_cache', 'k.'), obj)
-        self.assertEqual(c.load('test_cache', 'y'), None)
-        self.assertEqual(c.load('test_cache2', 'k.'), None)
-        c.remove()
-        self.assertFalse(os.path.exists(self.test_dir))
-        self.assertEqual(c.load('test_cache', 'k.'), None)
+def test_unspecified_locale(self):
+    fake = Faker()
+    assert len(fake.locales) == 1
+    assert len(fake.factories) == 1
+    assert fake.locales[0] == DEFAULT_LOCALE
 ```
 
-**Testes 2 e 3 utilizam da classe:**
-```python
-class BaseTestSubtitles(unittest.TestCase):
-    url = None
-    IE = None
-
-    def setUp(self):
-        self.DL = FakeYDL()
-        self.ie = self.IE()
-        self.DL.add_info_extractor(self.ie)
-
-    def getInfoDict(self):
-        info_dict = self.DL.extract_info(self.url, download=False)
-        return info_dict
-
-    def getSubtitles(self):
-        info_dict = self.getInfoDict()
-        subtitles = info_dict['requested_subtitles']
-        if not subtitles:
-            return subtitles
-        for sub_info in subtitles.values():
-            if sub_info.get('data') is None:
-                uf = self.DL.urlopen(sub_info['url'])
-                sub_info['data'] = uf.read().decode('utf-8')
-        return dict((l, sub_info['data']) for l, sub_info in subtitles.items())
-```
+O teste 1,***test_unspecified_locale***, testa se, ao criarmos a classe **Faker** sem passarmos nenhum parâmetro, obtemos uma classe com uma única fábrica, e um único *locale*, que deve ser também o *DEFAULT_LOCALE* definido em config.py.
 
 **Teste 2**
 ```python
-class TestTedSubtitles(BaseTestSubtitles):
-    url = 'http://www.ted.com/talks/dan_dennett_on_our_consciousness.html'
-    IE = TEDIE
+def test_add_dicts(self):
+    t1 = {"a": 1, "b": 2}
+    t2 = {"b": 1, "c": 3}
+    t3 = {"d": 4}
 
-    def test_allsubtitles(self):
-        self.DL.params['writesubtitles'] = True
-        self.DL.params['allsubtitles'] = True
-        subtitles = self.getSubtitles()
-        self.assertTrue(len(subtitles.keys()) >= 28)
-        self.assertEqual(md5(subtitles['en']), '4262c1665ff928a2dada178f62cb8d14')
-        self.assertEqual(md5(subtitles['fr']), '66a63f7f42c97a50f8c0e90bc7797bb5')
-        for lang in ['es', 'fr', 'de']:
-            self.assertTrue(subtitles.get(lang) is not None, 'Subtitles for \'%s\' not extracted' % lang)
-
+    result = add_dicts(t1, t2, t3)
+    assert result == {"a": 1, "c": 3, "b": 3, "d": 4}
 ```
+
+
+O teste 2,***test_add_dicts***, que faz parte dos testes dos métodos "úteis" testa o método responsável pela adição de dois ou mais dicionários, tal adição ocorre de forma que as chaves comuns terão seus valores adicionados.
+
+Para testar tal método, são criados 3 dicionários cujas chaves são Strings e os valores Inteiros, sendo que o dicionário t1 e o dicionário t2 possuem a chave "b" em comum.Ao somar os dois dicionários é conferido se o dicionário resultante da soma é equivalente a um dicionário com todas as chaves únicas dos 3 dicionários e se a chave comum dos dicionários t1 e t2 possui valor equivalente a soma dos valores da chave nos dois dicionários.
+
 **Teste 3**
 ```python
-class TestVimeoSubtitles(BaseTestSubtitles):
-    url = 'http://vimeo.com/76979871'
-    IE = VimeoIE
-
-    def test_allsubtitles(self):
-        self.DL.params['writesubtitles'] = True
-        self.DL.params['allsubtitles'] = True
-        subtitles = self.getSubtitles()
-        self.assertEqual(set(subtitles.keys()), set(['de', 'en', 'es', 'fr']))
-        self.assertEqual(md5(subtitles['en']), '8062383cf4dec168fc40a088aa6d5888')
-        self.assertEqual(md5(subtitles['fr']), 'b6191146a6c5d3a452244d853fde6dc8')
-
-    def test_nosubtitles(self):
-        self.DL.expect_warning('video doesn\'t have subtitles')
-        self.url = 'http://vimeo.com/56015672'
-        self.DL.params['writesubtitles'] = True
-        self.DL.params['allsubtitles'] = True
-        subtitles = self.getSubtitles()
-        self.assertFalse(subtitles)
+def test_locale_as_string(self):
+    locale = "en_US"
+    fake = Faker(locale)
+    assert len(fake.locales) == 1
+    assert len(fake.factories) == 1
+    assert fake.locales[0] == locale
 ```
+
+O teste 3,***test_locale_as_string***, testa se, ao criarmos a classe **Faker** passando como parâmetro apenas uma String, obtemos uma classe com uma única fábrica, e um único *locale*, que deve ser igual à String que foi passada como parâmetro.
+
+
